@@ -24,14 +24,17 @@ fn main() {
     };
 
     let lines = reader.split(b'\n').skip(skip).take(count);
-    let mut output = matches.opt_str("o").and_then(|output| File::create(output).ok());
+    let mut output = matches.opt_str("o").and_then(|file| File::create(file).ok());
+    const WRITE_FILE_ERROR: &str = "Write output file with error.";
 
     for line in lines {
         if let Ok(ref l) = line {
-            let utf8_line = String::from_utf8_lossy(l);
             match output {
-                Some(ref mut out) =>  writeln!(out, "{}", utf8_line).expect("Can not write file"),
-                _ => println!("{}", utf8_line),
+                Some(ref mut out) =>  {
+                    out.write_all(l).expect(WRITE_FILE_ERROR);
+                    out.write_all(b"\n").expect(WRITE_FILE_ERROR);
+                },
+                _ => println!("{}", String::from_utf8_lossy(l)),
             }
         }
     }
