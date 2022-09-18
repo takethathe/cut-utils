@@ -23,21 +23,16 @@ fn main() {
         Box::new(std::io::stdin().lock())
     };
 
-    let lines = reader.split(b'\n').skip(skip).take(count)
-        .map(|l| {
-            String::from_utf8_lossy(&l.unwrap()).to_string()
-        });
+    let lines = reader.split(b'\n').skip(skip).take(count);
+    let mut output = matches.opt_str("o").and_then(|output| File::create(output).ok());
 
-    match matches.opt_str("o").and_then(|output| File::create(output).ok()) {
-        Some(mut out) => {
-                for line in lines {
-                    writeln!(out, "{}", line).expect("Can not write file");
-                }
-        },
-        _ => {
-            for line in lines {
-                println!("{}", line);
+    for line in lines {
+        if let Ok(ref l) = line {
+            let utf8_line = String::from_utf8_lossy(l);
+            match output {
+                Some(ref mut out) =>  writeln!(out, "{}", utf8_line).expect("Can not write file"),
+                _ => println!("{}", utf8_line),
             }
-        },
+        }
     }
 }
