@@ -28,8 +28,6 @@ fn main() {
             String::from_utf8_lossy(&l.unwrap()).to_string()
         });
 
-    println!("The begin[{}], the count[{}]", skip, count);
-
     match matches.opt_str("o").and_then(|output| File::create(output).ok()) {
         Some(mut out) => {
                 for line in lines {
