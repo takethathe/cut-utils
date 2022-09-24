@@ -20,7 +20,7 @@ fn main() {
     let matches = opts.parse(&args[1..]).unwrap();
 
     if matches.opt_present("h") {
-        print_usage(&args[0].as_str(), &opts);
+        print_usage(args[0].as_str(), &opts);
         return;
     }
 
@@ -45,24 +45,21 @@ fn main() {
     const WRITE_FILE_ERROR: &str = "Write output file with error.";
     const NEW_LINE: &[u8] = b"\n";
     let lines = reader.split(NEW_LINE[0]).skip(skip).take(count);
-    match matches
+    if let Some(ref mut out) = matches
         .opt_str("o")
         .and_then(|file| File::create(file).ok())
     {
-        Some(ref mut out) => {
-            out.write_all(
-                &lines
-                    .filter_map(|l| l.ok())
-                    .collect::<Vec<Vec<u8>>>()
-                    .join(NEW_LINE),
-            )
-            .expect(WRITE_FILE_ERROR);
-        }
-        _ => {
-            for line in lines {
-                if let Ok(ref l) = line {
-                    println!("{}", String::from_utf8_lossy(l))
-                }
+        out.write_all(
+            &lines
+                .filter_map(|l| l.ok())
+                .collect::<Vec<Vec<u8>>>()
+                .join(NEW_LINE),
+        )
+        .expect(WRITE_FILE_ERROR);
+    } else {
+        for line in lines {
+            if let Ok(ref l) = line {
+                println!("{}", String::from_utf8_lossy(l))
             }
         }
     }
