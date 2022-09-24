@@ -11,10 +11,10 @@ fn print_usage(program: &str, opts: &Options) {
 
 fn main() {
     let mut opts = getopts::Options::new();
-    opts.optopt("s", "skip", "Skipped line number", "number");
-    opts.optopt("n", "num", "Total line number", "number");
-    opts.optopt("o", "output", "Output file", "FILENAME");
-    opts.optflag("h", "help", "Usage information");
+    opts.optopt("s", "skip", "Skipped line number", "number")
+        .optopt("n", "num", "Total line number", "number")
+        .optopt("o", "output", "Output file", "FILE")
+        .optflag("h", "help", "Print usage");
 
     let args: Vec<String> = std::env::args().collect();
     let matches = opts.parse(&args[1..]).unwrap();
@@ -34,9 +34,10 @@ fn main() {
         .unwrap_or(usize::MAX);
 
     let reader: Box<dyn BufRead> = if !matches.free.is_empty() {
-        match File::open(matches.free[0].clone()) {
-            Ok(f) => Box::new(BufReader::new(f)),
-            _ => panic!("Can not open file: {}", matches.free[0]),
+        if let Ok(f) = File::open(matches.free[0].clone()) {
+            Box::new(BufReader::new(f))
+        } else {
+            panic!("Can not open file: {}", matches.free[0])
         }
     } else {
         Box::new(std::io::stdin().lock())
