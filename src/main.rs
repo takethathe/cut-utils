@@ -1,8 +1,8 @@
 extern crate getopts;
 
-use std::fs::File;
-use std::io::{BufReader, BufRead, Write};
 use getopts::Options;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
 
 fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} FILE [options]", program);
@@ -24,8 +24,14 @@ fn main() {
         return;
     }
 
-    let skip = matches.opt_str("s").and_then(|s| s.parse().ok()).unwrap_or(usize::MIN);
-    let count = matches.opt_str("n").and_then(|s| s.parse().ok()).unwrap_or(usize::MAX);
+    let skip = matches
+        .opt_str("s")
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(usize::MIN);
+    let count = matches
+        .opt_str("n")
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(usize::MAX);
 
     let reader: Box<dyn BufRead> = if !matches.free.is_empty() {
         match File::open(matches.free[0].clone()) {
@@ -39,18 +45,25 @@ fn main() {
     const WRITE_FILE_ERROR: &str = "Write output file with error.";
     const NEW_LINE: &[u8] = b"\n";
     let lines = reader.split(NEW_LINE[0]).skip(skip).take(count);
-    match matches.opt_str("o").and_then(|file| File::create(file).ok()) {
+    match matches
+        .opt_str("o")
+        .and_then(|file| File::create(file).ok())
+    {
         Some(ref mut out) => {
-            out.write_all(&lines.filter_map(|l| {
-                l.ok()
-            }).collect::<Vec<Vec<u8>>>().join(NEW_LINE)).expect(WRITE_FILE_ERROR);
-        },
+            out.write_all(
+                &lines
+                    .filter_map(|l| l.ok())
+                    .collect::<Vec<Vec<u8>>>()
+                    .join(NEW_LINE),
+            )
+            .expect(WRITE_FILE_ERROR);
+        }
         _ => {
             for line in lines {
                 if let Ok(ref l) = line {
                     println!("{}", String::from_utf8_lossy(l))
                 }
             }
-        },
+        }
     }
 }
