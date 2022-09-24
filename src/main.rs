@@ -2,14 +2,27 @@ extern crate getopts;
 
 use std::fs::File;
 use std::io::{BufReader, BufRead, Write};
+use getopts::Options;
+
+fn print_usage(program: &str, opts: &Options) {
+    let brief = format!("Usage: {} FILE [options]", program);
+    print!("{}", opts.usage(&brief));
+}
 
 fn main() {
     let mut opts = getopts::Options::new();
-    opts.optopt("s", "skip", "Skipped line number", "FILENAME");
-    opts.optopt("n", "num", "Total line number", "FILENAME");
+    opts.optopt("s", "skip", "Skipped line number", "number");
+    opts.optopt("n", "num", "Total line number", "number");
     opts.optopt("o", "output", "Output file", "FILENAME");
+    opts.optflag("h", "help", "Usage information");
 
-    let matches = opts.parse(std::env::args().skip(1)).unwrap();
+    let args: Vec<String> = std::env::args().collect();
+    let matches = opts.parse(&args[1..]).unwrap();
+
+    if matches.opt_present("h") {
+        print_usage(&args[0].as_str(), &opts);
+        return;
+    }
 
     let skip = matches.opt_str("s").and_then(|s| s.parse().ok()).unwrap_or(usize::MIN);
     let count = matches.opt_str("n").and_then(|s| s.parse().ok()).unwrap_or(usize::MAX);
@@ -23,19 +36,21 @@ fn main() {
         Box::new(std::io::stdin().lock())
     };
 
-    let lines = reader.split(b'\n').skip(skip).take(count);
-    let mut output = matches.opt_str("o").and_then(|file| File::create(file).ok());
     const WRITE_FILE_ERROR: &str = "Write output file with error.";
-
-    for line in lines {
-        if let Ok(ref l) = line {
-            match output {
-                Some(ref mut out) =>  {
-                    out.write_all(l).expect(WRITE_FILE_ERROR);
-                    out.write_all(b"\n").expect(WRITE_FILE_ERROR);
-                },
-                _ => println!("{}", String::from_utf8_lossy(l)),
+    const NEW_LINE: &[u8] = b"\n";
+    let lines = reader.split(NEW_LINE[0]).skip(skip).take(count);
+    match matches.opt_str("o").and_then(|file| File::create(file).ok()) {
+        Some(ref mut out) => {
+            out.write_all(&lines.filter_map(|l| {
+                l.ok()
+            }).collect::<Vec<Vec<u8>>>().join(NEW_LINE)).expect(WRITE_FILE_ERROR);
+        },
+        _ => {
+            for line in lines {
+                if let Ok(ref l) = line {
+                    println!("{}", String::from_utf8_lossy(l))
+                }
             }
-        }
+        },
     }
 }
